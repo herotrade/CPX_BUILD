@@ -5,15 +5,12 @@
 -Xmx4g
 
 # GC配置 - 使用G1GC，适合大堆内存
+-XX:+UnlockExperimentalVMOptions
 -XX:+UseG1GC
 -XX:G1HeapRegionSize=32m
--XX:+UseG1GC
 -XX:MaxGCPauseMillis=200
 -XX:G1NewSizePercent=30
 -XX:G1MaxNewSizePercent=40
--XX:+UseLargePages
--XX:+UnlockExperimentalVMOptions
--XX:+UseTransparentHugePages
 
 # 内存优化
 -XX:+AlwaysPreTouch

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Redis市场数据容器 - 关闭持久化，高性能
   redis_market:
