@@ -46,14 +46,7 @@ thread_pool.write.queue_size: 1000
 thread_pool.search.size: 6
 thread_pool.search.queue_size: 1000
 
-# 刷新间隔优化 - 适合K线数据写入
-index.refresh_interval: 30s
-index.number_of_shards: 1
-index.number_of_replicas: 0
-
-# 段合并优化
-index.merge.policy.max_merge_at_once: 5
-index.merge.policy.segments_per_tier: 5
+# 索引级别设置已移除 - 将通过索引模板设置
 
 # 缓存配置
 indices.breaker.total.limit: 70%
@@ -77,7 +70,4 @@ cluster.routing.allocation.disk.watermark.low: 85%
 cluster.routing.allocation.disk.watermark.high: 90%
 cluster.routing.allocation.disk.watermark.flood_stage: 95%
 
-# 时序数据优化
-index.codec: best_compression
-index.store.type: fs
-index.store.fs.fs_lock: simple
+# 时序数据优化设置已移除 - 将通过索引模板设置
