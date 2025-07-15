@@ -1,0 +1,254 @@
+version: '3.8'
+
+services:
+  # Redis市场数据容器 - 关闭持久化，高性能
+  redis_market:
+    image: redis:7-alpine
+    container_name: redis_market
+    restart: unless-stopped
+    ports:
+      - "6378:6379"
+    volumes:
+      - ./redis_market/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ./redis_market/data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - data_network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "DmUYTbggA6JMPDrkmqykuLfgp5raj3", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Redis缓存容器 - 开启完整持久化
+  redis_cache:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - ./redis_cache/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ./redis_cache/data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - data_network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "DmUYTbggA6JMPDrkmqykuLfgp5raj3", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Elasticsearch K线数据存储容器
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+    container_name: elasticsearch_kline
+    restart: unless-stopped
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - ELASTIC_PASSWORD=DmUYTbggA6JMPDrkmqykuLfgp5raj3
+      - ELASTIC_USERNAME=elastic
+      - "ES_JAVA_OPTS=-Xms2g -Xmx4g"
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+    volumes:
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - ./elasticsearch/config/jvm.options:/usr/share/elasticsearch/config/jvm.options:ro
+      - ./elasticsearch/data:/usr/share/elasticsearch/data
+      - ./elasticsearch/logs:/usr/share/elasticsearch/logs
+    networks:
+      - data_network
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    healthcheck:
+      test: ["CMD-SHELL", "curl -u elastic:DmUYTbggA6JMPDrkmqykuLfgp5raj3 -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ElasticVue - Elasticsearch管理界面
+  elasticvue:
+    image: cars10/elasticvue:latest
+    container_name: elasticvue
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./elasticvue/config/config.json:/usr/share/nginx/html/api/config.json:ro
+    environment:
+      - ELASTICVUE_CLUSTERS=[{"name":"kline-cluster","uri":"http://elasticsearch_kline:9200","username":"elastic","password":"DmUYTbggA6JMPDrkmqykuLfgp5raj3"}]
+    networks:
+      - data_network
+    depends_on:
+      - elasticsearch
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # LibreTranslate - 翻译服务
+  libretranslate:
+    image: libretranslate/libretranslate:latest
+    container_name: libretranslate
+    restart: unless-stopped
+    ports:
+      - "9000:5000"
+    environment:
+      - LT_DISABLE_WEB_UI=false
+      - LT_DISABLE_FILES_TRANSLATION=false
+    networks:
+      - data_network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # RocketMQ NameServer
+  rocketmq-nameserver:
+    image: apache/rocketmq:5.1.4
+    container_name: rocketmq-nameserver
+    restart: unless-stopped
+    ports:
+      - "9876:9876"
+    volumes:
+      - ./rocketmq/nameserver/logs:/home/rocketmq/logs
+      - ./rocketmq/nameserver/store:/home/rocketmq/store
+    environment:
+      - JAVA_OPT_EXT=-Xms512m -Xmx512m -Xmn256m
+    command: ["sh", "mqnamesrv"]
+    networks:
+      - data_network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.2'
+    healthcheck:
+      test: ["CMD-SHELL", "sh mqadmin updateSubGroup -n localhost:9876 -c DefaultCluster -g test_group || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # RocketMQ Broker
+  rocketmq-broker:
+    image: apache/rocketmq:5.1.4
+    container_name: rocketmq-broker
+    restart: unless-stopped
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    volumes:
+      - ./rocketmq/broker/logs:/home/rocketmq/logs
+      - ./rocketmq/broker/store:/home/rocketmq/store
+      - ./rocketmq/broker/conf/broker.conf:/home/rocketmq/rocketmq-5.1.4/conf/broker.conf:ro
+    environment:
+      - JAVA_OPT_EXT=-Xms1g -Xmx2g -Xmn1g
+      - NAMESRV_ADDR=rocketmq-nameserver:9876
+    command: ["sh", "mqbroker", "-c", "/home/rocketmq/rocketmq-5.1.4/conf/broker.conf"]
+    networks:
+      - data_network
+    depends_on:
+      - rocketmq-nameserver
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD-SHELL", "sh mqadmin clusterList -n rocketmq-nameserver:9876 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# 创建数据服务专用网络桥
+networks:
+  data_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# 数据卷定义
+volumes:
+  redis_market_data:
+    driver: local
+  redis_cache_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  elasticsearch_logs:
+    driver: local
+  rocketmq_nameserver_logs:
+    driver: local
+  rocketmq_nameserver_store:
+    driver: local
+  rocketmq_broker_logs:
+    driver: local
+  rocketmq_broker_store:
+    driver: local

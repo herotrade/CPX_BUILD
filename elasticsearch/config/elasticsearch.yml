@@ -1,0 +1,83 @@
+# Elasticsearch 8.12.2 生产环境配置 - K线数据存储优化
+
+# 集群配置
+cluster.name: "kline-data-cluster"
+node.name: "kline-data-node"
+node.roles: ["master", "data", "ingest"]
+
+# 网络配置
+network.host: 0.0.0.0
+http.port: 9200
+transport.port: 9300
+
+# 发现配置 - 单节点模式
+discovery.type: single-node
+
+# 内存配置 - 针对4GB内存优化
+bootstrap.memory_lock: true
+indices.memory.index_buffer_size: 20%
+indices.memory.min_index_buffer_size: 96mb
+
+# 数据路径配置
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+
+# 安全配置
+xpack.security.enabled: true
+xpack.security.authc.api_key.enabled: true
+xpack.security.transport.ssl.enabled: false
+xpack.security.http.ssl.enabled: false
+
+# CORS配置 - 允许跨域访问
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+http.cors.allow-methods: "GET, POST, PUT, DELETE, OPTIONS, HEAD"
+http.cors.allow-headers: "X-Requested-With, Content-Type, Content-Length, Authorization"
+http.cors.allow-credentials: true
+
+# 索引配置 - 针对K线数据优化
+indices.queries.cache.size: 20%
+indices.fielddata.cache.size: 30%
+indices.requests.cache.size: 5%
+
+# 线程池配置 - 针对时序数据优化
+thread_pool.write.size: 4
+thread_pool.write.queue_size: 1000
+thread_pool.search.size: 6
+thread_pool.search.queue_size: 1000
+
+# 刷新间隔优化 - 适合K线数据写入
+index.refresh_interval: 30s
+index.number_of_shards: 1
+index.number_of_replicas: 0
+
+# 段合并优化
+index.merge.policy.max_merge_at_once: 5
+index.merge.policy.segments_per_tier: 5
+
+# 缓存配置
+indices.breaker.total.limit: 70%
+indices.breaker.fielddata.limit: 40%
+indices.breaker.request.limit: 30%
+
+# 日志配置
+logger.level: INFO
+logger.org.elasticsearch.discovery: WARN
+
+# 监控配置
+xpack.monitoring.enabled: false
+xpack.ml.enabled: false
+xpack.watcher.enabled: false
+xpack.graph.enabled: false
+
+# 性能优化
+action.auto_create_index: true
+cluster.routing.allocation.disk.threshold_enabled: true
+cluster.routing.allocation.disk.watermark.low: 85%
+cluster.routing.allocation.disk.watermark.high: 90%
+cluster.routing.allocation.disk.watermark.flood_stage: 95%
+
+# 时序数据优化
+index.codec: best_compression
+index.store.type: fs
+index.store.fs.fs_lock: simple
