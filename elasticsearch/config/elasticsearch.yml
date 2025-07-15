@@ -57,11 +57,8 @@ indices.breaker.request.limit: 30%
 logger.level: INFO
 logger.org.elasticsearch.discovery: WARN
 
-# 监控配置
-xpack.monitoring.enabled: false
+# 监控配置 - 8.x兼容版本
 xpack.ml.enabled: false
-xpack.watcher.enabled: false
-xpack.graph.enabled: false
 
 # 性能优化
 action.auto_create_index: true
