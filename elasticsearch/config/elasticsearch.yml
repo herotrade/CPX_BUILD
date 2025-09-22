@@ -41,7 +41,7 @@ indices.fielddata.cache.size: 30%
 indices.requests.cache.size: 5%
 
 # 线程池配置 - 针对时序数据优化
-thread_pool.write.size: 4
+thread_pool.write.size: 3
 thread_pool.write.queue_size: 1000
 thread_pool.search.size: 6
 thread_pool.search.queue_size: 1000
