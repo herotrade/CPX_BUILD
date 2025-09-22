@@ -193,8 +193,8 @@ services:
 
   # CPX Exchange Run Server
   cpx_exchange_runserver:
-    image: machen740/cpx-exchange-runserver:dev
-    container_name: cpx_exchange_runserver
+    image: machen740/cpx-exchange-runserver:dev-amd64
+    container_name: cpx_runserver
     restart: unless-stopped
     ports:
       - "9501:9501"
