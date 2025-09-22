@@ -203,7 +203,7 @@ services:
     volumes:
       - ./app/CPX_EXCHANGE:/CPX_EXCHANGE
     working_dir: /CPX_EXCHANGE
-    command: ["/bin/sh", "-c", "composer install --ignore-platform-reqs && php bin/hyperf.php migrate:fresh --seed && php bin/hyperf.php start"]
+    command: ["/bin/sh", "-c", "composer install --ignore-platform-reqs && php bin/hyperf.php migrate:fresh --seed && php bin/hyperf.php start; tail -f /dev/null"]
     depends_on:
       - mysql
       - redis_cache
