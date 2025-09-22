@@ -16,7 +16,7 @@ services:
       resources:
         limits:
           memory: 2G
-          cpus: '2.0'
+          cpus: '4.0'
         reservations:
           memory: 512M
           cpus: '0.5'
@@ -43,8 +43,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
-          cpus: '2.0'
+          memory: 4G
+          cpus: '4.0'
         reservations:
           memory: 512M
           cpus: '0.5'
@@ -111,7 +111,7 @@ services:
     volumes:
       - ./elasticvue/config/config.json:/usr/share/nginx/html/api/config.json:ro
     environment:
-      - ELASTICVUE_CLUSTERS=[{"name":"kline-cluster","uri":"http://elasticsearch_kline:9200","username":"elastic","password":"DmUYTbggA6JMPDrkmqykuLfgp5raj3"}]
+      - ELASTICVUE_CLUSTERS=[{"name":"kline-cluster","uri":"http://elasticsearch:9200","username":"elastic","password":"DmUYTbggA6JMPDrkmqykuLfgp5raj3"}]
     networks:
       - data_network
     depends_on:
@@ -158,71 +158,68 @@ services:
       retries: 3
       start_period: 60s
 
-  # RocketMQ NameServer
-  rocketmq-nameserver:
-    image: apache/rocketmq:5.1.4
-    container_name: rocketmq-nameserver
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_cpx
     restart: unless-stopped
     ports:
-      - "9876:9876"
-    volumes:
-      - ./rocketmq/nameserver/logs:/home/rocketmq/logs
-      - ./rocketmq/nameserver/store:/home/rocketmq/store
+      - "3306:3306"
     environment:
-      - JAVA_OPT_EXT=-Xms512m -Xmx512m -Xmn256m
-    command: ["sh", "mqnamesrv"]
+      - MYSQL_ROOT_PASSWORD=3kfwskZg5Z1qi7bqdJbWs6RNccCZQzN2thCtcUCW2WA8d5bPfGxUixLd4vo0gwNG
+      - MYSQL_DATABASE=cpx_exchange
+      - MYSQL_USER=cpx_exchange
+      - MYSQL_PASSWORD=DmUYTbggA6JMPDrkmqykuLfgp5raj3
+    volumes:
+      - ./mysql/config/production.cnf:/etc/mysql/conf.d/production.cnf:ro
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/logs:/var/log/mysql
     networks:
       - data_network
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 256M
-          cpus: '0.2'
-    healthcheck:
-      test: ["CMD-SHELL", "sh mqadmin updateSubGroup -n localhost:9876 -c DefaultCluster -g test_group || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-  # RocketMQ Broker
-  rocketmq-broker:
-    image: apache/rocketmq:5.1.4
-    container_name: rocketmq-broker
-    restart: unless-stopped
-    ports:
-      - "10909:10909"
-      - "10911:10911"
-      - "10912:10912"
-    volumes:
-      - ./rocketmq/broker/logs:/home/rocketmq/logs
-      - ./rocketmq/broker/store:/home/rocketmq/store
-      - ./rocketmq/broker/conf/broker.conf:/home/rocketmq/rocketmq-5.1.4/conf/broker.conf:ro
-    environment:
-      - JAVA_OPT_EXT=-Xms1g -Xmx2g -Xmn1g
-      - NAMESRV_ADDR=rocketmq-nameserver:9876
-    command: ["sh", "mqbroker", "-c", "/home/rocketmq/rocketmq-5.1.4/conf/broker.conf"]
-    networks:
-      - data_network
-    depends_on:
-      - rocketmq-nameserver
-    deploy:
-      resources:
-        limits:
-          memory: 3G
-          cpus: '2.0'
+          memory: 4G
+          cpus: '4.0'
         reservations:
           memory: 1G
-          cpus: '0.5'
+          cpus: '1'
     healthcheck:
-      test: ["CMD-SHELL", "sh mqadmin clusterList -n rocketmq-nameserver:9876 || exit 1"]
+      test: ["CMD", "mysqladmin", "-uroot", "-p3kfwskZg5Z1qi7bqdJbWs6RNccCZQzN2thCtcUCW2WA8d5bPfGxUixLd4vo0gwNG", "ping", "-h", "127.0.0.1"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 60s
+
+  # CPX Exchange Run Server
+  cpx_exchange_runserver:
+    image: machen740/cpx-exchange-runserver:dev
+    container_name: cpx_exchange_runserver
+    restart: unless-stopped
+    ports:
+      - "9501:9501"
+      - "9510:9510"
+      - "9511:9511"
+    volumes:
+      - ./app/CPX_EXCHANGE:/CPX_EXCHANGE
+    working_dir: /CPX_EXCHANGE
+    command: ["/bin/sh", "-c", "composer install --ignore-platform-reqs && php bin/hyperf.php migrate:fresh --seed && php bin/hyperf.php start"]
+    depends_on:
+      - mysql
+      - redis_cache
+      - redis_market
+      - elasticsearch
+    networks:
+      - data_network
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '6.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
 
 # 创建数据服务专用网络桥
 networks:
@@ -241,12 +238,4 @@ volumes:
   elasticsearch_data:
     driver: local
   elasticsearch_logs:
-    driver: local
-  rocketmq_nameserver_logs:
-    driver: local
-  rocketmq_nameserver_store:
-    driver: local
-  rocketmq_broker_logs:
-    driver: local
-  rocketmq_broker_store:
     driver: local
