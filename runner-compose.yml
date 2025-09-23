@@ -228,6 +228,18 @@ services:
           memory: 512M
           cpus: '0.5'
 
+  # 管理后台前端
+  cpx_manager:
+    image: cpxexchange/admin:prod
+    container_name: cpx_manager
+    restart: unless-stopped
+    ports:
+      - "9520:80"
+    volumes:
+      - ./logs/manager:/var/log/nginx
+    networks:
+      - data_network
+
 
 # 创建数据服务专用网络桥
 networks:
