@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  cpx-nginx:
+    image: nginx:1.25-alpine
+    container_name: cpx_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d:ro
+      - ./html:/usr/share/nginx/html:ro
+      - ./logs:/var/log/nginx
+    networks:
+      - data_network
+
+networks:
+  data_network:
+    external: true
+    name: data_network

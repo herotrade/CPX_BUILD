@@ -192,8 +192,8 @@ services:
       start_period: 60s
 
   # CPX Exchange Run Server
-  cpx_exchange_runserver:
-    image: machen740/cpx-exchange-runserver:dev-amd64
+  cpx_runserver:
+    image: cpxexchange/run_server:prod
     container_name: cpx_runserver
     restart: unless-stopped
     ports:
@@ -203,7 +203,15 @@ services:
     volumes:
       - ./app/CPX_EXCHANGE:/CPX_EXCHANGE
     working_dir: /CPX_EXCHANGE
-    command: ["/bin/sh", "-c", "composer install --ignore-platform-reqs && php bin/hyperf.php start; tail -f /dev/null"]
+    command:
+      - /bin/sh
+      - -c
+      - |
+        if [ ! -f /CPX_EXCHANGE/.env ] && [ -f /CPX_EXCHANGE/prod.env ]; then
+          cp /CPX_EXCHANGE/prod.env /CPX_EXCHANGE/.env;
+        fi;
+        composer install --ignore-platform-reqs && php bin/hyperf.php start;
+        tail -f /dev/null
     depends_on:
       - mysql
       - redis_cache
