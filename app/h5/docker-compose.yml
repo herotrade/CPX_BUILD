@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  cpx_h5:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cpx_h5:latest
+    container_name: cpx_h5
+    restart: unless-stopped
+    ports:
+      - "9530:80"
+    networks:
+      - data_network
+
+networks:
+  data_network:
+    external: true
+    name: data_network
