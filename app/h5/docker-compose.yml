@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  cpx_h5:
+  cpx_app:
     build:
       context: .
       dockerfile: Dockerfile
-    image: cpx_h5:latest
-    container_name: cpx_h5
+    image: cpx_app:latest
+    container_name: cpx_app
     restart: unless-stopped
     ports:
       - "9530:80"
