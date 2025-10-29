@@ -434,6 +434,37 @@ if grep -q '"-p.*",' "$RUNNER_COMPOSE"; then
     sed -i "s|\"-p[^\"]*\",|\"-p${DB_PASSWORD_ESCAPED}\",|" "$RUNNER_COMPOSE"
     echo -e "${GREEN}  ✓ runner-compose.yml: MySQL healthcheck 密码已同步${NC}"
 fi
+
+# 更新 CPX_GO_SERVER 的 YAML 配置文件中的数据库密码
+GO_CONFIG_FILES=(
+    "./app/CPX_GO_SERVER/config/config.yaml"
+    "./app/CPX_GO_SERVER/services/api-v2/config.prod.yaml"
+    "./app/CPX_GO_SERVER/services/api-v2/config.yaml"
+)
+
+for GO_CONFIG in "${GO_CONFIG_FILES[@]}"; do
+    if [ -f "$GO_CONFIG" ]; then
+        # 检查是否存在 database 节点
+        if grep -q "^database:" "$GO_CONFIG"; then
+            # 提取 database 节点下的旧密码值
+            OLD_GO_PASSWORD=$(awk '/^database:/,/^[a-z_]+:/ {if (/^  password:/) {sub(/^  password: */, ""); gsub(/^"|"$/, ""); print; exit}}' "$GO_CONFIG")
+
+            # 只在 database 节点范围内更新 password（从 database: 到下一个顶级节点之间）
+            sed -i '/^database:/,/^[a-z_]/ {s|^  password:.*|  password: "'"${DB_PASSWORD_ESCAPED}"'"|;}' "$GO_CONFIG"
+
+            echo -e "${GREEN}  ✓ ${GO_CONFIG}: database.password${NC}"
+            if [ -n "$OLD_GO_PASSWORD" ]; then
+                echo "    旧值: ${OLD_GO_PASSWORD}"
+            else
+                echo "    旧值: (未找到)"
+            fi
+            echo "    新值: ${DB_PASSWORD}"
+        fi
+    else
+        log_warn "配置文件不存在，跳过: $GO_CONFIG"
+    fi
+done
+
 echo ""
 
 # MySQL cpx_exchange 密码
@@ -677,7 +708,7 @@ log_info "安装脚本执行完成！"
 echo ""
 
 echo ""
-log_info "重置管理员密码~"
+log_info "重置管理员密码，请先连接数据库完成数据库初始化~"
 echo ""
 # 请输入管理员密码
 ADMIN_PASSWORD=$(ask_input "管理员密码" "123456")
@@ -685,3 +716,22 @@ ADMIN_PASSWORD=$(ask_input "管理员密码" "123456")
 docker exec cpx_runserver /bin/bash -c "php bin/hyperf.php reset:admin:pwd --password=$ADMIN_PASSWORD"
 
 log_info "管理员密码已重置为: $ADMIN_PASSWORD"
+
+# 安装 go-server
+log_info "安装 go-server..."
+cd /data/CPX_BUILD/app/CPX_GO_SERVER
+# 如果 .env 文件不存在，则复制 prod.env 到 .env
+if [ ! -f .env ]; then
+    cp prod.env .env
+fi
+log_info "构建并启动 go-server..."
+docker compose up -d --build
+
+cd /data/CPX_BUILD
+
+# 安装完成后，提示用户重启服务
+log_info "安装完成..."
+echo ""
+log_info "您可以使用以下命令查看服务状态:"
+log_info "  docker compose -f runner-compose.yml ps"
+log_info "  docker compose -f runner-compose.yml logs -f"
