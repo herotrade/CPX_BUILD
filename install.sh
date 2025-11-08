@@ -14,6 +14,10 @@ CONFIG_FILES=(
 NGINX_TEMPLATE="nginx/conf.d/cpx_exchange.temp.conf"
 NGINX_CONFIG="nginx/conf.d/cpx_exchange.conf"
 
+APP_REPO_URL=${APP_REPO_URL:-https://github.com/herotrade/CPX_EXCHANGE.git}
+APP_REPO_BRANCH=${APP_REPO_BRANCH:-prod}
+APP_CLONE_DIR=${APP_CLONE_DIR:-/app}
+
 COMPOSE_BIN=()
 
 ensure_docker_env() {
@@ -154,8 +158,40 @@ start_containers() {
   echo "查看日志: ${COMPOSE_BIN[*]} -f runner-compose.yml logs -f"
 }
 
+sync_app_repo() {
+  echo "正在同步应用代码..."
+  if ! command -v git >/dev/null 2>&1; then
+    echo "错误: 未检测到 git，请确认 scripts/install_docker_git.sh 已正确运行。" >&2
+    exit 1
+  }
+
+  local repo_dir="$APP_CLONE_DIR"
+  local branch="$APP_REPO_BRANCH"
+  local repo="$APP_REPO_URL"
+
+  if [ -d "$repo_dir/.git" ]; then
+    echo "检测到已存在仓库，正在更新 ${repo_dir} ..."
+    git -C "$repo_dir" fetch --all --prune
+    git -C "$repo_dir" checkout "$branch"
+    git -C "$repo_dir" pull --ff-only origin "$branch"
+  else
+    if [ -d "$repo_dir" ] && [ "$(ls -A "$repo_dir" 2>/dev/null)" ]; then
+      echo "错误: 目录 ${repo_dir} 已存在且包含内容，无法在其中克隆仓库。" >&2
+      exit 1
+    fi
+    rm -rf "$repo_dir"
+    mkdir -p "$(dirname "$repo_dir")"
+    echo "首次拉取 ${repo} (${branch}) 至 ${repo_dir} ..."
+    git clone --branch "$branch" --single-branch "$repo" "$repo_dir"
+  fi
+
+  echo "✓ 应用代码已同步到 ${repo_dir}"
+  echo ""
+}
+
 ensure_docker_env
 ensure_config_files
 ensure_nginx_config
 prepare_directories
+sync_app_repo
 start_containers
