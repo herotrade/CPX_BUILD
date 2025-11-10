@@ -5,6 +5,8 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 CONFIG_FILES=(
   "runner-compose.yml"
   "redis_cache/redis.conf"
@@ -16,7 +18,7 @@ NGINX_CONFIG="nginx/conf.d/cpx_exchange.conf"
 
 APP_REPO_URL=${APP_REPO_URL:-https://github.com/herotrade/CPX_EXCHANGE.git}
 APP_REPO_BRANCH=${APP_REPO_BRANCH:-prod}
-APP_CLONE_DIR=${APP_CLONE_DIR:-"$(pwd)/app"}
+APP_CLONE_DIR=${APP_CLONE_DIR:-"${SCRIPT_DIR}/app"}
 
 COMPOSE_BIN=()
 
@@ -175,11 +177,11 @@ sync_app_repo() {
     git -C "$repo_dir" checkout "$branch"
     git -C "$repo_dir" pull --ff-only origin "$branch"
   else
-    if [ -d "$repo_dir" ]; then
-      echo "检测到目录 ${repo_dir} 已存在，将清空后重新克隆..."
-      rm -rf "$repo_dir"
-    fi
     mkdir -p "$(dirname "$repo_dir")"
+    if [ -d "$repo_dir" ] && [ "$(ls -A "$repo_dir" 2>/dev/null)" ]; then
+      echo "错误: 目录 ${repo_dir} 已存在且包含内容，无法在其中克隆仓库。请手动清空或指定其它目录后重试。" >&2
+      exit 1
+    fi
     echo "首次拉取 ${repo} (${branch}) 至 ${repo_dir} ..."
     git clone --branch "$branch" --single-branch "$repo" "$repo_dir"
   fi
