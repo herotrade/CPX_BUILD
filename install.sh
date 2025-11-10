@@ -175,11 +175,10 @@ sync_app_repo() {
     git -C "$repo_dir" checkout "$branch"
     git -C "$repo_dir" pull --ff-only origin "$branch"
   else
-    if [ -d "$repo_dir" ] && [ "$(ls -A "$repo_dir" 2>/dev/null)" ]; then
-      echo "错误: 目录 ${repo_dir} 已存在且包含内容，无法在其中克隆仓库。" >&2
-      exit 1
+    if [ -d "$repo_dir" ]; then
+      echo "检测到目录 ${repo_dir} 已存在，将清空后重新克隆..."
+      rm -rf "$repo_dir"
     fi
-    rm -rf "$repo_dir"
     mkdir -p "$(dirname "$repo_dir")"
     echo "首次拉取 ${repo} (${branch}) 至 ${repo_dir} ..."
     git clone --branch "$branch" --single-branch "$repo" "$repo_dir"
