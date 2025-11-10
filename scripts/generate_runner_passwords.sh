@@ -98,8 +98,8 @@ def gen_password(length: int = 32) -> str:
 def gen_secret(name: str) -> str:
     lower = name.lower()
     if "jwt" in lower:
-        raw = secrets.token_bytes(32)
-        return base64.urlsafe_b64encode(raw).decode("ascii")
+        raw = secrets.token_bytes(64)
+        return base64.b64encode(raw).decode("ascii")
     return gen_password()
 
 unique_names = list(dict.fromkeys(placeholders))
