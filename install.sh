@@ -163,7 +163,7 @@ sync_app_repo() {
   if ! command -v git >/dev/null 2>&1; then
     echo "错误: 未检测到 git，请确认 scripts/install_docker_git.sh 已正确运行。" >&2
     exit 1
-  }
+  fi
 
   local repo_dir="$APP_CLONE_DIR"
   local branch="$APP_REPO_BRANCH"
