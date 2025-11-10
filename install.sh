@@ -199,7 +199,7 @@ sync_app_repo
 mkdir -p "${APP_CLONE_DIR}/tmp"
 export TMPDIR="${APP_CLONE_DIR}/tmp"
 export DOCKER_TMPDIR="${APP_CLONE_DIR}/tmp"
-if mkdir -p /app/tmp 2>/dev/null; then
-  chmod 1777 /app/tmp 2>/dev/null || true
-fi
+sudo mkdir -p /app/tmp /app/overlay2 2>/dev/null || true
+sudo chmod 1777 /app/tmp 2>/dev/null || true
+sudo chmod 755 /app/overlay2 2>/dev/null || true
 start_containers
