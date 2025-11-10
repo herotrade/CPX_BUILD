@@ -5,6 +5,7 @@ ROOT_TEMPLATE="${RUNNER_COMPOSE_TEMPLATE:-runner-compose.temp.yml}"
 DEFAULT_TEMPLATES=(
   "redis_market/redis.temp.conf"
   "redis_cache/redis.temp.conf"
+  "app/CPX_EXCHANGE/prod.temp.env"
 )
 
 if ! command -v python3 >/dev/null 2>&1; then
@@ -54,6 +55,7 @@ import re
 import secrets
 import string
 import sys
+import base64
 
 if len(sys.argv) < 3:
     print("缺少模板文件参数，脚本未执行。", file=sys.stderr)
@@ -68,12 +70,24 @@ for path_str in sys.argv[2:]:
         template_paths.append(path)
         seen.add(path)
 
-pattern = re.compile(r"\{([A-Za-z0-9_]+_password)\}")
+pattern = re.compile(r"\{([A-Za-z0-9_]+_(?:password|secret|sec))\}")
 root_content = root_template.read_text(encoding="utf-8")
-placeholders = pattern.findall(root_content)
+placeholders = []
+seen_names = set()
+
+def add_placeholders(names):
+    for name in names:
+        if name not in seen_names:
+            placeholders.append(name)
+            seen_names.add(name)
+
+add_placeholders(pattern.findall(root_content))
+
+for extra_path in template_paths:
+    add_placeholders(pattern.findall(extra_path.read_text(encoding="utf-8")))
 
 if not placeholders:
-    print(f"未在 {root_template} 中找到 {{*_password}} 占位符，文件未修改。")
+    print(f"未找到可替换的占位符，文件未修改。")
     sys.exit(0)
 
 alphabet = string.ascii_letters + string.digits
@@ -81,8 +95,15 @@ alphabet = string.ascii_letters + string.digits
 def gen_password(length: int = 32) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
+def gen_secret(name: str) -> str:
+    lower = name.lower()
+    if "jwt" in lower:
+        raw = secrets.token_bytes(32)
+        return base64.urlsafe_b64encode(raw).decode("ascii")
+    return gen_password()
+
 unique_names = list(dict.fromkeys(placeholders))
-replacements = {name: gen_password() for name in unique_names}
+replacements = {name: gen_secret(name) for name in unique_names}
 
 def target_path(path: pathlib.Path) -> pathlib.Path:
     name = path.name
@@ -95,7 +116,7 @@ results = []
 for src_path in template_paths:
     text = src_path.read_text(encoding="utf-8")
     for key, value in replacements.items():
-        text = text.replace(f"{{{key}}}", value)
+        text = text.replace(f"{{{key}}}", f"\"{value}\"")
     dest_path = target_path(src_path)
     dest_path.parent.mkdir(parents=True, exist_ok=True)
     dest_path.write_text(text, encoding="utf-8")
@@ -109,3 +130,12 @@ print("\n生成的密码如下：")
 for name, password in replacements.items():
     print(f"  {name}: {password}")
 PY
+
+ENV_TEMPLATE="app/CPX_EXCHANGE/prod.temp.env"
+ENV_OUTPUT="${ENV_TEMPLATE/.temp/}"
+ENV_DEST="app/CPX_EXCHANGE/.env"
+
+if [ -f "$ENV_OUTPUT" ]; then
+  cp "$ENV_OUTPUT" "$ENV_DEST"
+  echo "已生成环境文件: ${ENV_DEST}"
+fi

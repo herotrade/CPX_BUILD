@@ -100,6 +100,26 @@ PY
   for ((i = 0; i < count; i++)); do
     printf "  %s -> %s\n" "${placeholders[$i]}" "${final_domains[$i]}"
   done
+
+  local env_file="app/CPX_EXCHANGE/.env"
+  if [ -f "$env_file" ]; then
+    local api_url="https://${final_domains[0]}"
+    tmp_file=$(mktemp)
+    python3 - "$env_file" "$tmp_file" "$api_url" <<'PY'
+import pathlib
+import sys
+
+source = pathlib.Path(sys.argv[1])
+target = pathlib.Path(sys.argv[2])
+api_url = sys.argv[3]
+
+text = source.read_text(encoding="utf-8")
+text = text.replace("{api_url}", api_url)
+target.write_text(text, encoding="utf-8")
+PY
+    mv "$tmp_file" "$env_file"
+    echo "已将 {api_url} 替换为 ${api_url}"
+  fi
 }
 
 main
