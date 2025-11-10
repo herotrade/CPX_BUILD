@@ -16,7 +16,7 @@ NGINX_CONFIG="nginx/conf.d/cpx_exchange.conf"
 
 APP_REPO_URL=${APP_REPO_URL:-https://github.com/herotrade/CPX_EXCHANGE.git}
 APP_REPO_BRANCH=${APP_REPO_BRANCH:-prod}
-APP_CLONE_DIR=${APP_CLONE_DIR:-/app}
+APP_CLONE_DIR=${APP_CLONE_DIR:-"$(pwd)/app"}
 
 COMPOSE_BIN=()
 
