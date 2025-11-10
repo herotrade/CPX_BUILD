@@ -18,7 +18,9 @@ NGINX_CONFIG="nginx/conf.d/cpx_exchange.conf"
 
 APP_REPO_URL=${APP_REPO_URL:-https://github.com/herotrade/CPX_EXCHANGE.git}
 APP_REPO_BRANCH=${APP_REPO_BRANCH:-prod}
-APP_CLONE_DIR=${APP_CLONE_DIR:-"${SCRIPT_DIR}/app"}
+APP_REPO_NAME=${APP_REPO_NAME:-$(basename -s .git "${APP_REPO_URL}")}
+APP_PARENT_DIR=${APP_PARENT_DIR:-"${SCRIPT_DIR}/app"}
+APP_CLONE_DIR=${APP_CLONE_DIR:-"${APP_PARENT_DIR}/${APP_REPO_NAME}"}
 
 COMPOSE_BIN=()
 
@@ -177,15 +179,12 @@ sync_app_repo() {
     git -C "$repo_dir" checkout "$branch"
     git -C "$repo_dir" pull --ff-only origin "$branch"
   else
-    mkdir -p "$repo_dir"
-    echo "首次拉取 ${repo} (${branch}) 至 ${repo_dir} ..."
-    local current_dir
-    current_dir=$(pwd)
+    mkdir -p "$APP_PARENT_DIR"
+    echo "首次拉取 ${repo} (${branch}) 至 ${APP_PARENT_DIR} ..."
     (
-      cd "$repo_dir"
-      git clone --branch "$branch" --single-branch "$repo" .
+      cd "$APP_PARENT_DIR"
+      git clone --branch "$branch" --single-branch "$repo"
     )
-    cd "$current_dir"
   fi
 
   echo "✓ 应用代码已同步到 ${repo_dir}"
