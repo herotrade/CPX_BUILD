@@ -197,4 +197,5 @@ ensure_nginx_config
 prepare_directories
 sync_app_repo
 mkdir -p "${APP_CLONE_DIR}/tmp"
+export TMPDIR="${APP_CLONE_DIR}/tmp"
 start_containers
