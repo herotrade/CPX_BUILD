@@ -115,8 +115,10 @@ results = []
 
 for src_path in template_paths:
     text = src_path.read_text(encoding="utf-8")
+    needs_quotes = src_path.suffix == ".env"
     for key, value in replacements.items():
-        text = text.replace(f"{{{key}}}", f"\"{value}\"")
+        replacement = f"\"{value}\"" if needs_quotes else value
+        text = text.replace(f"{{{key}}}", replacement)
     dest_path = target_path(src_path)
     dest_path.parent.mkdir(parents=True, exist_ok=True)
     dest_path.write_text(text, encoding="utf-8")
