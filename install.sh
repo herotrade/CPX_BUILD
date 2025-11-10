@@ -177,9 +177,15 @@ sync_app_repo() {
     git -C "$repo_dir" checkout "$branch"
     git -C "$repo_dir" pull --ff-only origin "$branch"
   else
-    mkdir -p "$(dirname "$repo_dir")"
+    mkdir -p "$repo_dir"
     echo "首次拉取 ${repo} (${branch}) 至 ${repo_dir} ..."
-    git clone --branch "$branch" --single-branch "$repo" "$repo_dir"
+    local current_dir
+    current_dir=$(pwd)
+    (
+      cd "$repo_dir"
+      git clone --branch "$branch" --single-branch "$repo" .
+    )
+    cd "$current_dir"
   fi
 
   echo "✓ 应用代码已同步到 ${repo_dir}"
