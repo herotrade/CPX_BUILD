@@ -199,4 +199,7 @@ sync_app_repo
 mkdir -p "${APP_CLONE_DIR}/tmp"
 export TMPDIR="${APP_CLONE_DIR}/tmp"
 export DOCKER_TMPDIR="${APP_CLONE_DIR}/tmp"
+if mkdir -p /app/tmp 2>/dev/null; then
+  chmod 1777 /app/tmp 2>/dev/null || true
+fi
 start_containers
