@@ -18,3 +18,9 @@ log_error = /var/log/mysql/error.log
 slow_query_log = ON
 slow_query_log_file = /var/log/mysql/mysql-slow.log
 long_query_time = 2
+
+#主服务配置
+server-id=1 
+log-bin=mysql-bin
+binlog-do-db=cpx_exchange
+read-only=1
