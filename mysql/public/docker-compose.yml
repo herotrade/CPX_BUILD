@@ -1,0 +1,45 @@
+services:
+  # MySQL Public 只读数据库 - 用于同步主数据库数据
+  mysql_public:
+    image: mysql:8.0
+    container_name: mysql_public
+    restart: unless-stopped
+    ports:
+      - "33060:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=3kfwskZg5Z1qi7bqdJbWs6RNccCZQzN2thCtcUCW2WA8d5bPfGxUixLd4vo0gwNG
+      - MYSQL_DATABASE=cpx_exchange
+    volumes:
+      - ./config/public.cnf:/etc/mysql/conf.d/public.cnf:ro
+      - ./data:/var/lib/mysql
+      - ./init/init-public-user.sql:/docker-entrypoint-initdb.d/init-public-user.sql:ro
+    networks:
+      - data_network
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2.0"
+        reservations:
+          memory: 512M
+          cpus: "0.5"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "-uroot",
+          "-p3kfwskZg5Z1qi7bqdJbWs6RNccCZQzN2thCtcUCW2WA8d5bPfGxUixLd4vo0gwNG",
+          "ping",
+          "-h",
+          "127.0.0.1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+# 使用外部网络 - 与主 MySQL 容器共享
+networks:
+  data_network:
+    external: true

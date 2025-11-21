@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  cpx_web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cpx_web:latest
+    container_name: cpx_web
+    restart: unless-stopped
+    ports:
+      - "9531:3000"
+    networks:
+      - data_network
+
+networks:
+  data_network:
+    external: true
+    name: data_network
