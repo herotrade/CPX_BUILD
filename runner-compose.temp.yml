@@ -95,11 +95,7 @@ services:
         soft: 65536
         hard: 65536
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "curl -u elastic:{es_password} -f http://localhost:9200/_cluster/health || exit 1",
-        ]
+      test: ["CMD-SHELL", "curl -u elastic:{es_password} -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -189,16 +185,7 @@ services:
           memory: 1G
           cpus: "1"
     healthcheck:
-      test:
-        [
-          "CMD",
-          "mysqladmin",
-          "-uroot",
-          "-p{db_password}",
-          "ping",
-          "-h",
-          "127.0.0.1",
-        ]
+      test: ["CMD", "mysqladmin", "-uroot", "-p{db_password}", "ping", "-h", "127.0.0.1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -250,6 +237,19 @@ services:
       - "9520:80"
     volumes:
       - ./logs/manager:/var/log/nginx
+    user: "root"
+    networks:
+      - data_network
+
+  # 代理商后台前端
+  cpx_agent_manager:
+    image: cpxexchange/agent:prod
+    container_name: cpx_agent_manager
+    restart: unless-stopped
+    ports:
+      - "9530:80"
+    volumes:
+      - ./logs/agent_manager:/var/log/nginx
     user: "root"
     networks:
       - data_network

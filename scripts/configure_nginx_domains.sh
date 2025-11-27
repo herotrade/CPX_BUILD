@@ -57,9 +57,9 @@ main() {
   local main_domain
   main_domain=$(prompt_main_domain)
 
-  local placeholders=("api_domain" "manager_domain" "h5_domain" "app_domain")
-  local labels=("API 服务" "管理后台" "H5 站点" "APP 站点")
-  local defaults=("api" "manager" "h5" "app")
+  local placeholders=("api_domain" "manager_domain" "agent_manager_domain" "h5_domain" "app_domain")
+  local labels=("API 服务" "管理后台" "代理商后台" "H5 站点" "APP 站点")
+  local defaults=("api" "manager" "agent" "h5" "app")
   local final_domains=()
   local replacements=()
 

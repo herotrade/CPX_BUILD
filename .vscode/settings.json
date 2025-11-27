@@ -1,0 +1,21 @@
+{
+    "workbench.colorCustomizations": {
+        "statusBarItem.warningBackground": "#681dd7",
+        "statusBarItem.warningForeground": "#ffffff",
+        "statusBarItem.warningHoverBackground": "#681dd7",
+        "statusBarItem.warningHoverForeground": "#ffffff90",
+        "statusBarItem.remoteBackground": "#681dd7",
+        "statusBarItem.remoteForeground": "#ffffff",
+        "statusBarItem.remoteHoverBackground": "#681dd7",
+        "statusBarItem.remoteHoverForeground": "#ffffff90"
+    },
+    "window.title": "CPX_BUILD",
+    "projectColors.name": "CPX_BUILD",
+    "projectColors.mainColor": "#681dd7",
+    "projectColors.isActivityBarColored": false,
+    "projectColors.isTitleBarColored": false,
+    "projectColors.isStatusBarColored": false,
+    "projectColors.isProjectNameColored": true,
+    "projectColors.isActiveItemsColored": false,
+    "projectColors.setWindowTitle": true
+}

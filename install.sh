@@ -148,6 +148,9 @@ prepare_directories() {
   # 创建日志目录
   mkdir -p ./logs/manager
   chmod -R 755 ./logs/manager
+  # 代理商后台日志目录
+  mkdir -p ./logs/agent_manager
+  chmod -R 755 ./logs/agent_manager
 
   echo "✓ 所有目录已创建并设置权限"
   echo ""
