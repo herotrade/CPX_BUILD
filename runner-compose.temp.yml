@@ -261,7 +261,7 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 10.200.0.0/16
 
 # 数据卷定义
 volumes:
